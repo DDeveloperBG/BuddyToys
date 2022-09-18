@@ -1,3 +1,5 @@
+kubectl create -f item-namespace.yaml
+
 :: elasticsearch setup
 cd ./elasticsearch
 call elasticsearch-setup.bat

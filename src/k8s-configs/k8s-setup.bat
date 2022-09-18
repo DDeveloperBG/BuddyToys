@@ -1,5 +1,9 @@
 minikube start --cpus 4 --memory 8192
 
+minikube addons enable default-storageclass
+
+minikube addons enable storage-provisioner
+
 :: item-system setup
 cd ./item-system
 call item-system-setup.bat

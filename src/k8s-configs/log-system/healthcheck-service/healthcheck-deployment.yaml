@@ -4,6 +4,7 @@ metadata:
   name: healthcheck-deployment
   labels:
     app: aspnet-core-app
+  namespace: log
 spec:
   replicas: 2
   selector:
