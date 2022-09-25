@@ -4,7 +4,6 @@ metadata:
   labels:
     app: cassandra
   name: cassandra
-  namespace: item
 spec:
   clusterIP: None
   ports:

@@ -4,10 +4,9 @@ metadata:
   name: cassandra
   labels:
     app: cassandra
-  namespace: item
 spec:
   serviceName: cassandra
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: cassandra
@@ -91,11 +90,3 @@ spec:
         resources:
           requests:
             storage: 1Gi
----
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: fast
-provisioner: k8s.io/minikube-hostpath
-parameters:
-  type: pd-ssd

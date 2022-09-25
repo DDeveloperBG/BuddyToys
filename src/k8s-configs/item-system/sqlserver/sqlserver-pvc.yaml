@@ -2,7 +2,6 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: sql-server-pvc
-  namespace: item
 spec:
   accessModes:
     - ReadWriteOnce
@@ -10,7 +9,7 @@ spec:
   resources:
     requests:
       storage: 8Gi
-  storageClassName: slow
+  storageClassName: sql-server-storageclass
   selector:
     matchLabels:
       release: "stable"
