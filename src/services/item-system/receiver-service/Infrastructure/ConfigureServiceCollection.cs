@@ -1,7 +1,11 @@
-﻿namespace Receiver_service.Infrastructure
+﻿namespace ReceiverService.Infrastructure
 {
     using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.IdentityModel.Tokens;
+
+    using ReceiverService.Common;
+    using ReceiverService.DTOs;
+    using ReceiverService.Services.MessageBus;
 
     public static class ConfigureServiceCollection
     {
@@ -25,6 +29,22 @@
                         ValidAudience = configuration["Jwt:Firebase:ValidAudience"],
                     };
                 });
+
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddTransientServices(
+            this IServiceCollection serviceCollection,
+            IConfiguration configuration)
+        {
+            serviceCollection.AddTransient<MessageBusConfig>(_
+                => new MessageBusConfig
+                {
+                    ConnectionIP = configuration[ConfigConstants.MessageBus.ConnectionIpKey],
+                    Name = configuration[ConfigConstants.MessageBus.NameKey],
+                });
+
+            serviceCollection.AddTransient<IMessageBusService, RabbitMqService>();
 
             return serviceCollection;
         }

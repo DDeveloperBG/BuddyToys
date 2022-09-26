@@ -1,18 +1,19 @@
-﻿namespace Receiver_service
+﻿namespace ReceiverService
 {
-    using Receiver_service.Infrastructure;
+    using ReceiverService.Infrastructure;
     using Serilog;
 
     public class Startup
     {
-        public Startup(IConfiguration configuration)
-            => this.Configuration = configuration;
+        private readonly IConfiguration configuration;
 
-        public IConfiguration Configuration { get; set; }
+        public Startup(IConfiguration configuration)
+            => this.configuration = configuration;
 
         public void ConfigureServices(IServiceCollection services)
             => services
-                .AddFirebaseAuth(this.Configuration)
+                .AddFirebaseAuth(this.configuration)
+                .AddTransientServices(this.configuration)
                 .AddHealthChecksCustom()
                 .AddControllersCustom();
 

@@ -1,6 +1,7 @@
-﻿namespace Receiver_service.Infrastructure
+﻿namespace ReceiverService.Infrastructure
 {
     using HealthChecks.UI.Client;
+
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;

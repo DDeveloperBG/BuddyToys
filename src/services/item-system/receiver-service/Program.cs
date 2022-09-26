@@ -1,6 +1,6 @@
-﻿namespace Receiver_service
+﻿namespace ReceiverService
 {
-    using Receiver_service.Infrastructure;
+    using ReceiverService.Infrastructure;
 
     public class Program
     {

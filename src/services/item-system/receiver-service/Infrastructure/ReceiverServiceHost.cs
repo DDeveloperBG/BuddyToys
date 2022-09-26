@@ -1,4 +1,4 @@
-﻿namespace Receiver_service.Infrastructure
+﻿namespace ReceiverService.Infrastructure
 {
     using Serilog;
 
