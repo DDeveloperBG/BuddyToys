@@ -1,0 +1,89 @@
+version: "3.8"
+
+services:
+
+    order-data:
+        container_name: sqlserver
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports: 
+            - "1433:1433"
+        environment:
+            - ACCEPT_EULA=Y
+            - SA_PASSWORD=SQL_SERVER_PASSWORD # Replace on production
+        volumes: 
+            - sqldata:/var/opt/mssql
+        restart: on-failure            
+        networks: 
+            - item-system-network
+            
+    item-data:
+        container_name: cassandra
+        image: cassandra:4.0
+        ports: 
+            - "9042:9042"
+        environment:
+            - CASSANDRA_CLUSTER_NAME=item-data
+        volumes: 
+            - cassandra:/var/opt/cassandra
+        restart: on-failure
+        networks: 
+            - item-system-network
+            
+    wishlist-data:
+        image: redis:6.2-alpine
+        ports:
+            - 6379:6379
+        command: redis-server --save 20 1 --loglevel warning --requirepass REDIS_PASSWORD # Replace on production
+        environment:
+            - REDIS_HOST=cache
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=REDIS_PASSWORD # Replace on production
+        volumes: 
+            - redis:/var/opt/redis
+        restart: on-failure
+        networks: 
+            - item-system-network
+            
+    messages:
+        container_name: rabbitmq
+        image: rabbitmq:3-management
+        ports:
+            - "5672:5672"
+        hostname: "rabbitmq"
+        environment:
+            - RABBITMQ_ERLANG_COOKIE=Rand0mR4bbitMqCo0k1e # Replace on production
+            - RABBITMQ_DEFAULT_USER=rabbitmq # Replace on production
+            - RABBITMQ_DEFAULT_PASS=rabbitmq # Replace on production
+        volumes:
+            - rabbitmq:/var/lib/rabbitmq
+        networks: 
+            - item-system-network
+
+    receiver-service:
+        container_name: receiver-service
+        image: receiver-service:1.0
+        build:
+            context: ./receiver-service
+            dockerfile: ./Dockerfile
+        ports: 
+            - "49170:80"
+        env_file: Common.env
+        restart: on-failure
+        volumes:
+            - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/DataProtection-Keys
+        networks: 
+            - item-system-network
+        depends_on:
+            - order-data
+            - item-data
+            - messages
+            - wishlist-data
+    
+networks:
+    item-system-network:
+
+volumes:
+    sqldata:
+    cassandra:
+    rabbitmq:
+    redis:

@@ -2,13 +2,18 @@
   "profiles": {
     "health_check_service": {
       "commandName": "Project",
+      "launchBrowser": true,
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "dotnetRunMessages": true
+      "applicationUrl": "https://localhost:49123;http://localhost:49156"
     },
     "Docker": {
-      "commandName": "Docker"
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "publishAllPorts": true,
+      "useSSL": true
     }
   }
 }

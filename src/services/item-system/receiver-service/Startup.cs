@@ -15,7 +15,8 @@
                 .AddFirebaseAuth(this.configuration)
                 .AddTransientServices(this.configuration)
                 .AddHealthChecksCustom()
-                .AddControllersCustom();
+                .AddControllersCustom()
+                .AddDataProtectionCustom();
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
             => app
