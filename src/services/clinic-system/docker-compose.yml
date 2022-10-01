@@ -22,7 +22,7 @@ services:
       context: ./clinic-service
       dockerfile: ./Dockerfile
     ports:
-      - "49170:80"
+      - "41783:80"
     env_file: Common.env
     restart: on-failure
     volumes:

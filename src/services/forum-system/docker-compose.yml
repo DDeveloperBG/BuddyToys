@@ -41,7 +41,7 @@ services:
       context: ./forum-service
       dockerfile: ./Dockerfile
     ports:
-      - "?:80"
+      - "46412:80"
     env_file: Common.env
     restart: on-failure
     volumes:

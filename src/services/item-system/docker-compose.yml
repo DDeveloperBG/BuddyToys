@@ -1,89 +1,228 @@
 version: "3.8"
 
 services:
+  order-data:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SQL_SERVER_PASSWORD # Replace on production
+    volumes:
+      - sqldata:/var/opt/mssql
+    restart: on-failure
+    networks:
+      - item-system-network
 
-    order-data:
-        container_name: sqlserver
-        image: mcr.microsoft.com/mssql/server:2019-latest
-        ports: 
-            - "1433:1433"
-        environment:
-            - ACCEPT_EULA=Y
-            - SA_PASSWORD=SQL_SERVER_PASSWORD # Replace on production
-        volumes: 
-            - sqldata:/var/opt/mssql
-        restart: on-failure            
-        networks: 
-            - item-system-network
-            
-    item-data:
-        container_name: cassandra
-        image: cassandra:4.0
-        ports: 
-            - "9042:9042"
-        environment:
-            - CASSANDRA_CLUSTER_NAME=item-data
-        volumes: 
-            - cassandra:/var/opt/cassandra
-        restart: on-failure
-        networks: 
-            - item-system-network
-            
-    wishlist-data:
-        image: redis:6.2-alpine
-        ports:
-            - 6379:6379
-        command: redis-server --save 20 1 --loglevel warning --requirepass REDIS_PASSWORD # Replace on production
-        environment:
-            - REDIS_HOST=cache
-            - REDIS_PORT=6379
-            - REDIS_PASSWORD=REDIS_PASSWORD # Replace on production
-        volumes: 
-            - redis:/var/opt/redis
-        restart: on-failure
-        networks: 
-            - item-system-network
-            
-    messages:
-        container_name: rabbitmq
-        image: rabbitmq:3-management
-        ports:
-            - "5672:5672"
-        hostname: "rabbitmq"
-        environment:
-            - RABBITMQ_ERLANG_COOKIE=Rand0mR4bbitMqCo0k1e # Replace on production
-            - RABBITMQ_DEFAULT_USER=rabbitmq # Replace on production
-            - RABBITMQ_DEFAULT_PASS=rabbitmq # Replace on production
-        volumes:
-            - rabbitmq:/var/lib/rabbitmq
-        networks: 
-            - item-system-network
+  item-data:
+    container_name: cassandra
+    image: cassandra:4.0
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=item-data
+    volumes:
+      - cassandra:/var/opt/cassandra
+    restart: on-failure
+    networks:
+      - item-system-network
 
-    receiver-service:
-        container_name: receiver-service
-        image: receiver-service:1.0
-        build:
-            context: ./receiver-service
-            dockerfile: ./Dockerfile
-        ports: 
-            - "49170:80"
-        env_file: Common.env
-        restart: on-failure
-        volumes:
-            - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/receiver-service/DataProtection-Keys
-        networks: 
-            - item-system-network
-        depends_on:
-            - order-data
-            - item-data
-            - messages
-            - wishlist-data
-    
+  wishlist-data:
+    image: redis:6.2-alpine
+    ports:
+      - 6379:6379
+    command: redis-server --save 20 1 --loglevel warning --requirepass REDIS_PASSWORD # Replace on production
+    environment:
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=REDIS_PASSWORD # Replace on production
+    volumes:
+      - redis:/var/opt/redis
+    restart: on-failure
+    networks:
+      - item-system-network
+
+  messages:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+    hostname: "rabbitmq"
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=Rand0mR4bbitMqCo0k1e # Replace on production
+      - RABBITMQ_DEFAULT_USER=rabbitmq # Replace on production
+      - RABBITMQ_DEFAULT_PASS=rabbitmq # Replace on production
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    networks:
+      - item-system-network
+
+  receiver-service:
+    container_name: receiver-service
+    image: receiver-service:1.0
+    build:
+      context: ./receiver-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "49170:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/receiver-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  wishlist-service:
+    container_name: wishlist-service
+    image: wishlist-service:1.0
+    build:
+      context: ./wishlist-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "49245:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/wishlist-service/DataProtection-Keys:/root/.aspnet/wishlist-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  order-service:
+    container_name: order-service
+    image: order-service:1.0
+    build:
+      context: ./order-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "49745:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/order-service/DataProtection-Keys:/root/.aspnet/order-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  payment-interface:
+    container_name: payment-interface
+    image: payment-interface:1.0
+    build:
+      context: ./payment-interface
+      dockerfile: ./Dockerfile
+    ports:
+      - "49763:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/payment-interface/DataProtection-Keys:/root/.aspnet/payment-interface/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  shipment-interface:
+    container_name: shipment-interface
+    image: shipment-interface:1.0
+    build:
+      context: ./shipment-interface
+      dockerfile: ./Dockerfile
+    ports:
+      - "47723:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/shipment-interface/DataProtection-Keys:/root/.aspnet/shipment-interface/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  item-read-service:
+    container_name: item-read-service
+    image: item-read-service:1.0
+    build:
+      context: ./item-read-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "45762:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/item-read-service/DataProtection-Keys:/root/.aspnet/item-read-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  item-search-service:
+    container_name: item-search-service
+    image: item-search-service:1.0
+    build:
+      context: ./item-search-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "43355:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/item-search-service/DataProtection-Keys:/root/.aspnet/item-search-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  management-service:
+    container_name: management-service
+    image: management-service:1.0
+    build:
+      context: ./management-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "44444:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/management-service/DataProtection-Keys:/root/.aspnet/management-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
 networks:
-    item-system-network:
+  item-system-network:
 
 volumes:
-    sqldata:
-    cassandra:
-    rabbitmq:
-    redis:
+  sqldata:
+  cassandra:
+  rabbitmq:
+  redis:
