@@ -1,90 +1,39 @@
 version: "3.8"
 
 services:
+  sqlserver:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SQL_SERVER_PASSWORD # Replace on production
+    volumes:
+      - sqlserver:/var/opt/mssql
+    restart: on-failure
+    networks:
+      - clinic-system-network
 
-    data:
-        container_name: sqlserver
-        image: mcr.microsoft.com/mssql/server:2019-latest
-        ports: 
-            - "1433:1433"
-        environment:
-            - ACCEPT_EULA=Y
-            - SA_PASSWORD=yourStrongPassword12!@
-        volumes: 
-            - sqldata:/var/opt/mssql 
-        networks: 
-            - carrentalsystem-network
-    
-    messages:
-        container_name: rabbitmq
-        image: rabbitmq:3-management
-        ports:
-            - "15672:15672"
-            - "5672:5672"
-        hostname: "rabbitmq"
-        environment:
-            - RABBITMQ_ERLANG_COOKIE=Rand0mR4bbitMqCo0k1e
-            - RABBITMQ_DEFAULT_USER=rabbitmq
-            - RABBITMQ_DEFAULT_PASS=rabbitmq
-        networks: 
-            - carrentalsystem-network
-
-    identity:
-        container_name: identity
-        build:
-            context: ./Server
-            dockerfile: ./CarRentalSystem.Identity/Dockerfile
-        ports: 
-            - "5003:80"
-        env_file: Server/CarRentalSystem/Common.env
-        environment:
-            - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=CarRentalIdentityDatabase;User Id=sa; Password=yourStrongPassword12!@;MultipleActiveResultSets=true
-        restart: on-failure
-        volumes:
-            - ./.aspnet/identity/DataProtection-Keys:/root/.aspnet/DataProtection-Keys
-        networks: 
-            - carrentalsystem-network
-        depends_on:
-            - data
-            
-    dealers:
-        container_name: dealers
-        build:
-            context: ./Server
-            dockerfile: ./CarRentalSystem.Dealers/Dockerfile
-        ports: 
-            - "5001:80"
-        env_file: Server/CarRentalSystem/Common.env
-        environment:
-            - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=CarRentalDealersDatabase;User Id=sa; Password=yourStrongPassword12!@;MultipleActiveResultSets=true
-        restart: on-failure
-        volumes:
-            - ./.aspnet/dealers/DataProtection-Keys:/root/.aspnet/DataProtection-Keys
-        networks: 
-            - carrentalsystem-network
-        depends_on:
-            - data
-            
-    statistics:
-        container_name: statistics
-        build:
-            context: ./Server
-            dockerfile: ./CarRentalSystem.Statistics/Dockerfile
-        ports: 
-            - "5005:80"
-        env_file: Server/CarRentalSystem/Common.env
-        environment:
-            - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=CarRentalStatisticsDatabase;User Id=sa; Password=yourStrongPassword12!@;MultipleActiveResultSets=true
-        restart: on-failure
-        volumes:
-            - ./.aspnet/statistics/DataProtection-Keys:/root/.aspnet/DataProtection-Keys
-        networks: 
-            - carrentalsystem-network
-        depends_on:
-            - data
+  clinic-service:
+    container_name: clinic-service
+    image: clinic-service:1.0
+    build:
+      context: ./clinic-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "49170:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/clinic-service/DataProtection-Keys:/root/.aspnet/clinic-service/DataProtection-Keys
+    networks:
+      - clinic-system-network
+    depends_on:
+      - sqlserver
 
 networks:
-    carrentalsystem-network:
+  clinic-system-network:
 
 volumes:
-    sqldata:
+  sqlserver:

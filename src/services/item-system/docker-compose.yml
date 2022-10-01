@@ -70,7 +70,7 @@ services:
         env_file: Common.env
         restart: on-failure
         volumes:
-            - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/DataProtection-Keys
+            - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/receiver-service/DataProtection-Keys
         networks: 
             - item-system-network
         depends_on:

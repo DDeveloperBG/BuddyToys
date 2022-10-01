@@ -14,7 +14,7 @@ services:
       LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
       KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
     networks:
-      - elk
+      - log-system-network
     depends_on:
       - elasticsearch
 
@@ -39,7 +39,7 @@ services:
       # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
       discovery.type: single-node
     networks:
-      - elk
+      - log-system-network
 
   logstash:
     build:
@@ -58,7 +58,7 @@ services:
       LS_JAVA_OPTS: -Xms256m -Xmx256m
       LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
     networks:
-      - elk
+      - log-system-network
     depends_on:
       - elasticsearch
 
@@ -74,7 +74,7 @@ services:
     environment:
       KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
     networks:
-      - elk
+      - log-system-network
     depends_on:
       - elasticsearch
 
@@ -89,14 +89,14 @@ services:
     env_file: Common.env
     restart: on-failure
     volumes:
-      - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/DataProtection-Keys
+      - ./.apsnet/health-check-service/DataProtection-Keys:/root/.aspnet/health-check-service/DataProtection-Keys
     networks:
-      - elk
+      - log-system-network
     depends_on:
       - elasticsearch
 
 networks:
-  elk:
+  log-system-network:
     driver: bridge
 
 volumes:
