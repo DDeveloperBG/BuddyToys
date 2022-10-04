@@ -58,6 +58,7 @@ services:
     networks:
       - item-system-network
 
+  # In need scale, capacity: 5
   receiver-service:
     container_name: receiver-service
     image: receiver-service:1.0
@@ -65,7 +66,7 @@ services:
       context: ./receiver-service
       dockerfile: ./Dockerfile
     ports:
-      - "49170:80"
+      - "49165-49170:80"
     env_file: Common.env
     restart: on-failure
     volumes:
@@ -77,6 +78,18 @@ services:
       - item-data
       - messages
       - wishlist-data
+
+  receiver-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./receiver-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - receiver-service
+    ports:
+      - "49173:49173"
+    networks:
+      - item-system-network
 
   wishlist-service:
     container_name: wishlist-service
@@ -98,6 +111,7 @@ services:
       - messages
       - wishlist-data
 
+  # In need scale, capacity: 5
   order-service:
     container_name: order-service
     image: order-service:1.0
@@ -105,7 +119,7 @@ services:
       context: ./order-service
       dockerfile: ./Dockerfile
     ports:
-      - "49745:80"
+      - "60244-60249:80"
     env_file: Common.env
     restart: on-failure
     volumes:
@@ -117,6 +131,18 @@ services:
       - item-data
       - messages
       - wishlist-data
+
+  order-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./order-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - order-service
+    ports:
+      - "49745:49745"
+    networks:
+      - item-system-network
 
   payment-interface:
     container_name: payment-interface
@@ -165,7 +191,7 @@ services:
       context: ./item-read-service
       dockerfile: ./Dockerfile
     ports:
-      - "45762:80"
+      - "57888-57893:80"
     env_file: Common.env
     restart: on-failure
     volumes:
@@ -178,6 +204,18 @@ services:
       - messages
       - wishlist-data
 
+  item-read-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./item-read-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - item-read-service
+    ports:
+      - "45762:45762"
+    networks:
+      - item-system-network
+
   item-search-service:
     container_name: item-search-service
     image: item-search-service:1.0
@@ -185,7 +223,7 @@ services:
       context: ./item-search-service
       dockerfile: ./Dockerfile
     ports:
-      - "43355:80"
+      - "48795-48800:80"
     env_file: Common.env
     restart: on-failure
     volumes:
@@ -197,6 +235,18 @@ services:
       - item-data
       - messages
       - wishlist-data
+
+  item-search-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./item-search-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - item-search-service
+    ports:
+      - "43355:43355"
+    networks:
+      - item-system-network
 
   management-service:
     container_name: management-service

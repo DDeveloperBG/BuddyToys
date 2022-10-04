@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  client:
+    container_name: client
+    image: user-client:1.0
+    build:
+      context: .
+      dockerfile: ./client-app/Dockerfile
+      args:
+        configuration: development
+    ports:
+      - "80:80"
+    restart: on-failure
+    networks:
+      - client-network
+
+networks:
+  client-network:
