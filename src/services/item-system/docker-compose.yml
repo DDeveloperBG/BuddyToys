@@ -1,6 +1,59 @@
 version: "3.8"
 
 services:
+  ek-setup:
+    build:
+      context: elastic-search/ek-setup/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    init: true
+    volumes:
+      - ek-setup:/state:Z
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      LOGSTASH_INTERNAL_PASSWORD: "not_needed" # but crashes without it
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    depends_on:
+      - elasticsearch
+    networks:
+      - item-system-network
+
+  elasticsearch:
+    build:
+      context: elastic-search/elasticsearch/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./elastic-search/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,z
+      - elasticsearch:/usr/share/elasticsearch/data:z
+    ports:
+      - "6543:9200"
+      - "42222:9300"
+    environment:
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
+      # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+      discovery.type: single-node
+    networks:
+      - item-system-network
+
+  kibana:
+    build:
+      context: elastic-search/kibana/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./elastic-search/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+    ports:
+      - "24555:5601"
+    environment:
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    depends_on:
+      - elasticsearch
+    networks:
+      - item-system-network
+
   order-data:
     container_name: sqlserver
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -270,8 +323,11 @@ services:
 
 networks:
   item-system-network:
+    driver: bridge
 
 volumes:
+  ek-setup:
+  elasticsearch:
   sqldata:
   cassandra:
   rabbitmq:

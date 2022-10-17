@@ -4,7 +4,8 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LogConnection": "https://localhost:7063/api/receive/log-info"
       },
       "applicationUrl": "https://localhost:43652;http://localhost:43355"
     },
