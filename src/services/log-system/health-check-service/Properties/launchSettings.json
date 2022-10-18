@@ -1,0 +1,20 @@
+{
+  "profiles": {
+    "health_check_service": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LogConnection": "https://localhost:7063/api/receive/log-info"
+      },
+      "applicationUrl": "https://localhost:49123;http://localhost:49156"
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "publishAllPorts": true,
+      "useSSL": true
+    }
+  }
+}

@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  sqlserver:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1435:1435"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SQL_SERVER_PASSWORD # Replace on production
+    volumes:
+      - sqlserver:/var/opt/mssql
+    restart: on-failure
+    networks:
+      - clinic-system-network
+
+  clinic-service:
+    container_name: clinic-service
+    image: clinic-service:1.0
+    build:
+      context: ./clinic-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "41783:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/clinic-service/DataProtection-Keys:/root/.aspnet/clinic-service/DataProtection-Keys
+    networks:
+      - clinic-system-network
+    depends_on:
+      - sqlserver
+
+networks:
+  clinic-system-network:
+
+volumes:
+  sqlserver:

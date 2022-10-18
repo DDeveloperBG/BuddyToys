@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  ek-setup:
+    build:
+      context: ek-setup/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    init: true
+    volumes:
+      - setup:/state:Z
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      LOGSTASH_INTERNAL_PASSWORD: "not_needed" # but crashes without it
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    depends_on:
+      - elasticsearch
+    networks:
+      - forum-system-network
+
+  elasticsearch:
+    build:
+      context: elasticsearch/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,z
+      - elasticsearch:/usr/share/elasticsearch/data:z
+    ports:
+      - "5244:9200"
+      - "43334:9300"
+    environment:
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
+      # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+      discovery.type: single-node
+    networks:
+      - forum-system-network
+
+  kibana:
+    build:
+      context: kibana/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+    ports:
+      - "24585:5601"
+    environment:
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    depends_on:
+      - elasticsearch
+    networks:
+      - forum-system-network
+
+  sqlserver:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1434:1434"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SQLServer_PASSWORD:-}
+    volumes:
+      - sqldata:/var/opt/mssql
+    restart: on-failure
+    networks:
+      - forum-system-network
+
+  forum-service:
+    container_name: forum-service
+    image: forum-service:1.0
+    build:
+      context: ./forum-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "46412:80"
+    env_file: .env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/forum-service/DataProtection-Keys:/root/.aspnet/forum-service/DataProtection-Keys
+    depends_on:
+      - sqlserver
+      - elasticsearch
+    networks:
+      - forum-system-network
+
+networks:
+  forum-system-network:
+    driver: bridge
+
+volumes:
+  ek-setup:
+  elasticsearch:
+  sqldata:

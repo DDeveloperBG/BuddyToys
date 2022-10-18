@@ -1,0 +1,334 @@
+version: "3.8"
+
+services:
+  ek-setup:
+    build:
+      context: elastic-search/ek-setup/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    init: true
+    volumes:
+      - ek-setup:/state:Z
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      LOGSTASH_INTERNAL_PASSWORD: "not_needed" # but crashes without it
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    depends_on:
+      - elasticsearch
+    networks:
+      - item-system-network
+
+  elasticsearch:
+    build:
+      context: elastic-search/elasticsearch/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./elastic-search/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,z
+      - elasticsearch:/usr/share/elasticsearch/data:z
+    ports:
+      - "6543:9200"
+      - "42222:9300"
+    environment:
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
+      # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+      discovery.type: single-node
+    networks:
+      - item-system-network
+
+  kibana:
+    build:
+      context: elastic-search/kibana/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./elastic-search/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+    ports:
+      - "24555:5601"
+    environment:
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    depends_on:
+      - elasticsearch
+    networks:
+      - item-system-network
+
+  order-data:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SQL_SERVER_PASSWORD # Replace on production
+    volumes:
+      - sqldata:/var/opt/mssql
+    restart: on-failure
+    networks:
+      - item-system-network
+
+  item-data:
+    container_name: cassandra
+    image: cassandra:4.0
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=item-data
+    volumes:
+      - cassandra:/var/opt/cassandra
+    restart: on-failure
+    networks:
+      - item-system-network
+
+  wishlist-data:
+    image: redis:6.2-alpine
+    ports:
+      - 6379:6379
+    command: redis-server --save 20 1 --loglevel warning --requirepass REDIS_PASSWORD # Replace on production
+    environment:
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=REDIS_PASSWORD # Replace on production
+    volumes:
+      - redis:/var/opt/redis
+    restart: on-failure
+    networks:
+      - item-system-network
+
+  messages:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+    hostname: "rabbitmq"
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=Rand0mR4bbitMqCo0k1e # Replace on production
+      - RABBITMQ_DEFAULT_USER=rabbitmq # Replace on production
+      - RABBITMQ_DEFAULT_PASS=rabbitmq # Replace on production
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    networks:
+      - item-system-network
+
+  # In need scale, capacity: 5
+  receiver-service:
+    container_name: receiver-service
+    image: receiver-service:1.0
+    build:
+      context: ./receiver-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "49165-49170:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/receiver-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  receiver-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./receiver-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - receiver-service
+    ports:
+      - "49173:49173"
+    networks:
+      - item-system-network
+
+  wishlist-service:
+    container_name: wishlist-service
+    image: wishlist-service:1.0
+    build:
+      context: ./wishlist-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "49245:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/wishlist-service/DataProtection-Keys:/root/.aspnet/wishlist-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  # In need scale, capacity: 5
+  order-service:
+    container_name: order-service
+    image: order-service:1.0
+    build:
+      context: ./order-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "60244-60249:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/order-service/DataProtection-Keys:/root/.aspnet/order-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  order-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./order-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - order-service
+    ports:
+      - "49745:49745"
+    networks:
+      - item-system-network
+
+  payment-interface:
+    container_name: payment-interface
+    image: payment-interface:1.0
+    build:
+      context: ./payment-interface
+      dockerfile: ./Dockerfile
+    ports:
+      - "49763:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/payment-interface/DataProtection-Keys:/root/.aspnet/payment-interface/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  shipment-interface:
+    container_name: shipment-interface
+    image: shipment-interface:1.0
+    build:
+      context: ./shipment-interface
+      dockerfile: ./Dockerfile
+    ports:
+      - "47723:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/shipment-interface/DataProtection-Keys:/root/.aspnet/shipment-interface/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  item-read-service:
+    container_name: item-read-service
+    image: item-read-service:1.0
+    build:
+      context: ./item-read-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "57888-57893:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/item-read-service/DataProtection-Keys:/root/.aspnet/item-read-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  item-read-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./item-read-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - item-read-service
+    ports:
+      - "45762:45762"
+    networks:
+      - item-system-network
+
+  item-search-service:
+    container_name: item-search-service
+    image: item-search-service:1.0
+    build:
+      context: ./item-search-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "48795-48800:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/item-search-service/DataProtection-Keys:/root/.aspnet/item-search-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+  item-search-loadbalancer:
+    image: nginx:latest
+    restart: on-failure
+    volumes:
+      - ./item-search-service/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - item-search-service
+    ports:
+      - "43355:43355"
+    networks:
+      - item-system-network
+
+  management-service:
+    container_name: management-service
+    image: management-service:1.0
+    build:
+      context: ./management-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "44444:80"
+    env_file: Common.env
+    restart: on-failure
+    volumes:
+      - ./.apsnet/management-service/DataProtection-Keys:/root/.aspnet/management-service/DataProtection-Keys
+    networks:
+      - item-system-network
+    depends_on:
+      - order-data
+      - item-data
+      - messages
+      - wishlist-data
+
+networks:
+  item-system-network:
+    driver: bridge
+
+volumes:
+  ek-setup:
+  elasticsearch:
+  sqldata:
+  cassandra:
+  rabbitmq:
+  redis:
