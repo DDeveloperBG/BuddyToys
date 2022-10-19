@@ -1,19 +1,27 @@
 ﻿namespace ManagementService.Infrastructure
 {
+    using ManangementService.Data;
+    using ManangementService.Data.Common;
+    using ManangementService.Data.Common.Repositories;
+    using ManangementService.Data.Repositories;
+
     using Microsoft.AspNetCore.Authentication.JwtBearer;
-    using Microsoft.AspNetCore.DataProtection;
-    using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
-    using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.IdentityModel.Tokens;
 
-    using ManagementService.Common;
-    using ManagementService.DTOs;
-    using ManagementService.Services.MessageBus;
-
     public static class ServiceCollectionExtensions
     {
+        public static IServiceCollection AddDatabase(
+            this IServiceCollection services)
+        {
+            services.AddScoped(typeof(IDeletableEntityRepository<>), typeof(EfDeletableEntityRepository<>));
+            services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+            services.AddScoped<IDbQueryRunner, DbQueryRunner>();
+
+            return services;
+        }
+
         public static IServiceCollection AddFirebaseAuth(
             this IServiceCollection serviceCollection,
             IConfiguration configuration)
@@ -39,28 +47,15 @@
         }
 
         public static IServiceCollection AddTransientServices(
-            this IServiceCollection serviceCollection,
-            IConfiguration configuration)
+            this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddTransient<MessageBusConfig>(_
-                => new MessageBusConfig
-                {
-                    ConnectionIP = configuration[ConfigConstants.MessageBus.ConnectionIpKey],
-                    Name = configuration[ConfigConstants.MessageBus.NameKey],
-                });
-
-            serviceCollection.AddTransient<IMessageBusService, RabbitMqService>();
-
             return serviceCollection;
         }
 
         public static IServiceCollection AddHealthChecksCustom(
             this IServiceCollection serviceCollection)
         {
-            var healthChecks = serviceCollection.AddHealthChecks();
-
-            healthChecks
-                .AddRabbitMQ(rabbitConnectionString: "amqp://rabbitmq:rabbitmq@rabbitmq/");
+            serviceCollection.AddHealthChecks();
 
             return serviceCollection;
         }
@@ -69,21 +64,6 @@
            this IServiceCollection serviceCollection)
         {
             serviceCollection.AddControllers();
-
-            return serviceCollection;
-        }
-
-        public static IServiceCollection AddDataProtectionCustom(
-           this IServiceCollection serviceCollection)
-        {
-            serviceCollection
-                .AddDataProtection()
-                .PersistKeysToFileSystem(new DirectoryInfo(@"../.aspnet/receiver-service/DataProtection-Keys"))
-                .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration()
-                {
-                    EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
-                    ValidationAlgorithm = ValidationAlgorithm.HMACSHA256,
-                });
 
             return serviceCollection;
         }

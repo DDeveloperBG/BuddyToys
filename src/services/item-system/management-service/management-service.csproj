@@ -13,6 +13,7 @@
 	<ItemGroup>
 		<PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" Version="6.0.2" />
 		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="6.0.5" />
+		<PackageReference Include="EFCore.Cassandra" Version="2.0.5" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.9" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
@@ -28,8 +29,12 @@
 
 	<ItemGroup>
 		<Folder Include="Controllers\" />
+		<Folder Include="Data\StudentsHelper.Data.Models\" />
+		<Folder Include="Data\StudentsHelper.Data\Migrations\" />
+		<Folder Include="DTOs\" />
+		<Folder Include="Services\" />
 	</ItemGroup>
 
-	<ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://json.schemastore.org/appsettings.json" /></VisualStudio></ProjectExtensions>
+	<ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>
