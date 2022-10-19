@@ -5,7 +5,9 @@
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "LogConnection": "https://localhost:7063/api/receive/log-info"
+        "LogConnection": "https://localhost:7063/api/receive/log-info",
+        "messagebus_connection_ip": "localhost",
+        "messagebus_name": "item_system_message_bus"
       },
       "applicationUrl": "https://localhost:49169;http://localhost:49170"
     },

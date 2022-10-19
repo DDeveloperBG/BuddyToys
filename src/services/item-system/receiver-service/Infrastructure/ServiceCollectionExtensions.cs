@@ -38,17 +38,23 @@
             return serviceCollection;
         }
 
-        public static IServiceCollection AddTransientServices(
+        public static IServiceCollection AddSingletonConfigurations(
             this IServiceCollection serviceCollection,
             IConfiguration configuration)
         {
-            serviceCollection.AddTransient<MessageBusConfig>(_
+            serviceCollection.AddSingleton<MessageBusConfig>(_
                 => new MessageBusConfig
                 {
                     ConnectionIP = configuration[ConfigConstants.MessageBus.ConnectionIpKey],
                     Name = configuration[ConfigConstants.MessageBus.NameKey],
                 });
 
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddTransientServices(
+            this IServiceCollection serviceCollection)
+        {
             serviceCollection.AddTransient<IMessageBusService, RabbitMqService>();
 
             return serviceCollection;
