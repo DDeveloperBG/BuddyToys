@@ -13,10 +13,10 @@
         public void ConfigureServices(IServiceCollection services)
             => services
                 .AddFirebaseAuth(this.configuration)
-                .AddTransientServices(this.configuration)
+                .AddTransientServices()
+                .AddDatabase()
                 .AddHealthChecksCustom()
-                .AddControllersCustom()
-                .AddDataProtectionCustom();
+                .AddControllersCustom();
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
             => app
