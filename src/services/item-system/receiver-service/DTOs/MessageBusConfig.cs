@@ -2,8 +2,8 @@
 {
     public class MessageBusConfig
     {
-        public string ConnectionIP { get; set; }
+        public string ConnectionIP { get; init; }
 
-        public string Name { get; set; }
+        public string Name { get; init; }
     }
 }
