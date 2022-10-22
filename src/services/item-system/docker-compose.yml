@@ -71,12 +71,22 @@ services:
   item-data:
     container_name: cassandra
     image: cassandra:4.0
+    mem_limit: 2g
     ports:
       - "9042:9042"
     environment:
       - CASSANDRA_CLUSTER_NAME=item-data
+      - CASSANDRA_PASSWORD_SEEDER=yes
+      - CASSANDRA_PASSWORD=cassandra
     volumes:
-      - cassandra:/var/opt/cassandra
+      - cassandra:/var/lib/cassandra
+      - "./cassandra/cassandra-init.sh:/cassandra-init.sh"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "authenticator: PasswordAuthenticator" >> /etc/cassandra/cassandra.yaml
+        /cassandra-init.sh
     restart: on-failure
     networks:
       - item-system-network
@@ -120,7 +130,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "49165-49170:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/receiver-service/DataProtection-Keys:/root/.aspnet/receiver-service/DataProtection-Keys
@@ -152,7 +162,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "49245:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/wishlist-service/DataProtection-Keys:/root/.aspnet/wishlist-service/DataProtection-Keys
@@ -173,7 +183,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "60244-60249:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/order-service/DataProtection-Keys:/root/.aspnet/order-service/DataProtection-Keys
@@ -205,7 +215,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "49763:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/payment-interface/DataProtection-Keys:/root/.aspnet/payment-interface/DataProtection-Keys
@@ -225,7 +235,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "47723:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/shipment-interface/DataProtection-Keys:/root/.aspnet/shipment-interface/DataProtection-Keys
@@ -245,7 +255,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "57888-57893:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/item-read-service/DataProtection-Keys:/root/.aspnet/item-read-service/DataProtection-Keys
@@ -277,7 +287,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "48795-48800:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/item-search-service/DataProtection-Keys:/root/.aspnet/item-search-service/DataProtection-Keys
@@ -309,7 +319,7 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "44444:80"
-    env_file: Common.env
+    env_file: .env
     restart: on-failure
     volumes:
       - ./.apsnet/management-service/DataProtection-Keys:/root/.aspnet/management-service/DataProtection-Keys

@@ -1,9 +1,9 @@
 ﻿namespace ManagementService.Infrastructure
 {
-    using ManangementService.Data;
-    using ManangementService.Data.Common;
-    using ManangementService.Data.Common.Repositories;
-    using ManangementService.Data.Repositories;
+    using Cassandra;
+    using Cassandra.Mapping;
+
+    using ManagementService.Data;
 
     using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.Extensions.Configuration;
@@ -12,16 +12,6 @@
 
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddDatabase(
-            this IServiceCollection services)
-        {
-            services.AddScoped(typeof(IDeletableEntityRepository<>), typeof(EfDeletableEntityRepository<>));
-            services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
-            services.AddScoped<IDbQueryRunner, DbQueryRunner>();
-
-            return services;
-        }
-
         public static IServiceCollection AddFirebaseAuth(
             this IServiceCollection serviceCollection,
             IConfiguration configuration)
@@ -46,6 +36,17 @@
             return serviceCollection;
         }
 
+        public static IServiceCollection AddSingletonServices(
+            this IServiceCollection services)
+        {
+            var db = AppDbContext.CreateInstance();
+
+            services.AddSingleton<ISession>(_ => db.Session);
+            services.AddSingleton<IMapper>(_ => db.Mapper);
+
+            return services;
+        }
+
         public static IServiceCollection AddTransientServices(
             this IServiceCollection serviceCollection)
         {
@@ -55,7 +56,10 @@
         public static IServiceCollection AddHealthChecksCustom(
             this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddHealthChecks();
+            var healthChecks = serviceCollection.AddHealthChecks();
+
+            healthChecks
+                .AddElasticsearch(elasticsearchUri: "http://localhost:9200");
 
             return serviceCollection;
         }

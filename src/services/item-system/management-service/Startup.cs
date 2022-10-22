@@ -13,8 +13,8 @@
         public void ConfigureServices(IServiceCollection services)
             => services
                 .AddFirebaseAuth(this.configuration)
+                .AddSingletonServices()
                 .AddTransientServices()
-                .AddDatabase()
                 .AddHealthChecksCustom()
                 .AddControllersCustom();
 

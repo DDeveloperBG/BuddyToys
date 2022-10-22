@@ -5,8 +5,7 @@
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "LogConnection": "https://localhost:7063/api/receive/log-info",
-        "DBConnection": "Server=.;Database=CarRentalDealersDatabase;Trusted_Connection=True;MultipleActiveResultSets=true"
+        "LogConnection": "https://localhost:7063/api/receive/log-info"
       },
       "applicationUrl": "https://localhost:44755;http://localhost:44444"
     },

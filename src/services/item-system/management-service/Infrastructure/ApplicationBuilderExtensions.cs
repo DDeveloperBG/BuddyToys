@@ -2,13 +2,12 @@
 {
     using HealthChecks.UI.Client;
 
-    using ManangementService.Data;
-    using ManangementService.Data.Seeding;
+    //using ManangementService.Data;
+    //using ManangementService.Data.Seeding;
 
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;
-    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Hosting;
 
     public static class ApplicationBuilderExtensions
@@ -47,20 +46,6 @@
         public static IApplicationBuilder Initialize(
             this IApplicationBuilder app)
         {
-            using (var serviceScope = app.ApplicationServices.CreateScope())
-            {
-                var dbContext = serviceScope
-                    .ServiceProvider
-                    .GetRequiredService<ApplicationDbContext>();
-
-                dbContext.Database.Migrate();
-
-                new ApplicationDbContextSeeder()
-                    .SeedAsync(dbContext, serviceScope.ServiceProvider)
-                    .GetAwaiter()
-                    .GetResult();
-            }
-
             return app;
         }
     }
