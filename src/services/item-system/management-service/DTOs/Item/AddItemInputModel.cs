@@ -1,6 +1,6 @@
-﻿namespace ManagementService.Data.Models
+﻿namespace ManagementService.DTOs.Item
 {
-    public class Item : BaseEntity
+    public class AddItemInputModel
     {
         public string Name { get; set; }
 

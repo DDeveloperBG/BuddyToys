@@ -2,9 +2,6 @@
 {
     using HealthChecks.UI.Client;
 
-    //using ManangementService.Data;
-    //using ManangementService.Data.Seeding;
-
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Diagnostics.HealthChecks;
     using Microsoft.AspNetCore.Hosting;

@@ -78,7 +78,7 @@
         {
             serviceCollection
                 .AddDataProtection()
-                .PersistKeysToFileSystem(new DirectoryInfo(@"../.aspnet/receiver-service/DataProtection-Keys"))
+                .PersistKeysToFileSystem(new DirectoryInfo(@"../.aspnet/item-read-service/DataProtection-Keys"))
                 .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration()
                 {
                     EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,

@@ -1,9 +1,12 @@
 ﻿namespace ManagementService.Infrastructure
 {
-    using Cassandra;
-    using Cassandra.Mapping;
+    using AutoMapper;
 
     using ManagementService.Data;
+    using ManagementService.Services.Category;
+    using ManagementService.Services.Data.RequestManager;
+    using ManagementService.Services.Item;
+    using ManagementService.Services.Mapper;
 
     using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.Extensions.Configuration;
@@ -37,19 +40,24 @@
         }
 
         public static IServiceCollection AddSingletonServices(
-            this IServiceCollection services)
+            this IServiceCollection serviceCollection)
         {
-            var db = AppDbContext.CreateInstance();
+            var dbManager = new AppDbManager();
+            serviceCollection.AddSingleton<AppDbContext>(_ => dbManager.CreateDbContext());
 
-            services.AddSingleton<ISession>(_ => db.Session);
-            services.AddSingleton<IMapper>(_ => db.Mapper);
+            var mapperManager = new MapperManager();
+            serviceCollection.AddSingleton<IMapper>(_ => mapperManager.GetMapper());
 
-            return services;
+            return serviceCollection;
         }
 
         public static IServiceCollection AddTransientServices(
             this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddTransient<IItemService, ItemService>();
+            serviceCollection.AddTransient<ICategoryService, CategoryService>();
+            serviceCollection.AddTransient<IRequestManager, RequestManager>();
+
             return serviceCollection;
         }
 
